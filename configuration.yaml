@@ -1,0 +1,8 @@
+gaussian_blur:
+  sigma: 1 #1
+  passes: 3 #2
+
+terrain_generation:
+  octaves: 5 #5
+  persistence: 0.5 #0.5
+  initial_scale: 64 #64
