@@ -1,9 +1,12 @@
-from typing import Generator, Any
+from typing import Generator, Any, Optional
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
 import time
 import yaml
+from PRNGs.xorshift32 import xorshift_32_float_generator
+from PRNGs.wichmann_hill import wichmann_hill_generator
+from PRNGs.logistic_map import logistic_map_pseudorandom_generator
 
 
 class GaussianSigmaShouldBePositive(Exception):
@@ -39,6 +42,7 @@ def load_configuration_yaml(*, config_path: str) -> dict:
 
     gaussian_blur = configuration["gaussian_blur"]
     terrain_generation = configuration["terrain_generation"]
+    prng = configuration["prng"]
 
     gaussian_sigma = float(gaussian_blur["sigma"])
 
@@ -62,15 +66,18 @@ def load_configuration_yaml(*, config_path: str) -> dict:
     
     terrain_initial_scale = float(terrain_generation["initial_scale"])
 
+    prng_type = prng["prng_type"]
+
     if terrain_initial_scale <= 0:
         raise TerrainInitialScaleShouldBePositive
-
+    
     return {
         "gaussian_sigma": gaussian_sigma,
         "gaussian_pass_count": gaussian_pass_count,
         "terrain_octave_count": terrain_octave_count,
         "terrain_persistence_factor": terrain_persistence_factor,
         "terrain_initial_scale": terrain_initial_scale,
+        "prng_type": prng_type,
     }
 
 
@@ -89,15 +96,12 @@ def configure_logging(*, level: int = logging.INFO) -> None:
 
     logging.basicConfig(
         level=level,
-        format=(
-            "%(asctime)s | "
-            "%(levelname)-8s | "
-            "%(message)s"
-        ),
+        format=("%(asctime)s | " "%(levelname)-8s | " "%(message)s"),
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     # Ensure timestamps use local time
+
     logging.Formatter.converter = time.localtime
 
 
@@ -112,8 +116,10 @@ def convolve_rows_for_gaussian_blur(
     result_rows: np.ndarray = np.empty(
         (padded_array.shape[0], map_array.shape[1]), dtype=np.float64
     )
+
     for i in range(padded_array.shape[0]):
         result_rows[i, :] = np.convolve(padded_array[i, :], kernel_1d, mode="valid")
+
     return result_rows
 
 
@@ -125,9 +131,12 @@ def convolve_columns_for_gaussian_blur(
     Idea: https://stackoverflow.com/questions/17841098/gaussian-blur-standard-deviation-radius-and-kernel-size
     """
     logging.info("Convolving columns for Gaussian blur...")
+
     result: np.ndarray = np.empty_like(map_array, dtype=np.float64)
+
     for j in range(result_rows.shape[1]):
         result[:, j] = np.convolve(result_rows[:, j], kernel_1d, mode="valid")
+
     return result
 
 
@@ -168,6 +177,7 @@ def add_gaussian_blur_to_map(
 
     if sigma <= 0.0 or map_array.size == 0:
         return map_array.copy()
+    
     cutoff_radius_of_gaussian_blur: int = compute_cutoff_radius_of_gaussian_blur(
         sigma=sigma
     )
@@ -200,7 +210,9 @@ def add_gaussian_blur_to_map(
         )
 
         output_array = result
+
     logging.info("Gaussian blur was generated...")
+
     return output_array
 
 
@@ -395,8 +407,10 @@ def generate_terrain_heightmap(
 
     if initial_scale is None:
         initial_scale = max(width, height) // 10
+
     if initial_scale < 1:
         initial_scale = 1
+
     logging.info(f"{initial_scale=}")
 
     logging.info("Initializing the final terrain array and synthesis parameters...")
@@ -411,7 +425,7 @@ def generate_terrain_heightmap(
         "Adding noise for multiple octaves with Perlin noise and bilinear interpolation..."
     )
 
-    for current_octave in range(1, octaves+1):
+    for current_octave in range(1, octaves + 1):
         logging.info(f"Currently at octave {current_octave} out of {octaves}...")
         layer: np.ndarray = generate_noise(
             scale=scale,
@@ -438,7 +452,7 @@ def generate_terrain_heightmap(
     return terrain
 
 
-# Default RNG
+# Default PRNG
 
 
 def default_random_number_generator_from_numpy(
@@ -455,7 +469,7 @@ def default_random_number_generator_from_numpy(
 
 def creating_2d_plot(*, heightmap: np.ndarray) -> None:
     """Idea: https://matplotlib.org/"""
-     # 2D plot
+    # 2D plot
 
     logging.info("Creating 2D plot...")
     figure_2d = plt.figure(figsize=(8, 6))
@@ -494,7 +508,9 @@ def creating_3d_plot(*, heightmap: np.ndarray) -> None:
     x_coordinates: np.ndarray = np.arange(0, heightmap_shape_1, dtype=np.float64)
     y_coordinates: np.ndarray = np.arange(0, heightmap_shape_0, dtype=np.float64)
 
-    x_coordinates_meshgrid, y_coordinates_meshgrid = np.meshgrid(x_coordinates, y_coordinates)
+    x_coordinates_meshgrid, y_coordinates_meshgrid = np.meshgrid(
+        x_coordinates, y_coordinates
+    )
 
     # create a new figure for the 3D surface
 
@@ -519,13 +535,13 @@ def creating_3d_plot(*, heightmap: np.ndarray) -> None:
     axes_3d.set_xlabel("X")
     axes_3d.set_ylabel("Y")
     axes_3d.set_zlabel("Elevation")
-    
+
     logging.info("3D plot was created...")
 
 
 def create_visualization(*, heightmap: np.ndarray) -> None:
     """Idea: https://matplotlib.org/"""
-   
+
     creating_2d_plot(heightmap=heightmap)
 
     creating_contour_plot(heightmap=heightmap)
@@ -533,6 +549,7 @@ def create_visualization(*, heightmap: np.ndarray) -> None:
     creating_3d_plot(heightmap=heightmap)
 
     logging.info("Displaying all plots...")
+
     plt.show()
 
 
@@ -547,12 +564,59 @@ def main(*args: Any, **kwargs: Any) -> None:
     configuration: dict = load_configuration_yaml(config_path="configuration.yaml")
     from time import time
 
-    random_seed: int = int(str(time()).replace(".", "")[12:19])
-    logging.info(f"{random_seed=}")
+    prng_type: float = configuration["prng_type"]
+    logging.info(f"{prng_type=}")
 
-    random_number_generator: Generator[float, None, None] = (
-        default_random_number_generator_from_numpy(seed=random_seed)
-    )
+    random_number_generator: Optional[Generator[float, None, None]] = None
+
+    if prng_type == "xorshift32":
+        logging.info("Choosing Xorshift32 as PRNG...")
+
+        random_seed: int = int(str(time()).replace(".", "")[12:19])
+        logging.info(f"{random_seed=}")
+
+        random_number_generator: Generator[float, None, None] = (
+            xorshift_32_float_generator(seed=random_seed)
+        )
+
+    elif prng_type == "wichmann_hill":
+        logging.info("Choosing Wichmann-Hill as PRNG...")
+
+        random_seed_1: int = int(str(time()).replace(".", "")[12:19])
+        logging.info(f"{random_seed_1=}")
+
+        random_seed_2: int = int(str(time()).replace(".", "")[12:19])
+        logging.info(f"{random_seed_2=}")
+
+        random_seed_3: int = int(str(time()).replace(".", "")[12:19])
+        logging.info(f"{random_seed_3=}")
+
+        random_number_generator: Generator[float, None, None] = wichmann_hill_generator(
+            seed_1=random_seed_1,
+            seed_2=random_seed_2,
+            seed_3=random_seed_3
+        )
+
+    elif prng_type == "logistic_map":
+        logging.info("Choosing Logistic Map as PRNG...")
+
+        random_seed: int = int(str(time()).replace(".", "")[12:19]) / 10**7
+        logging.info(f"{random_seed=}")
+
+        random_number_generator: Generator[float, None, None] = (
+            logistic_map_pseudorandom_generator(seed=random_seed)
+        )
+
+    else:
+        logging.info("Choosing default PRNG from Numpy...")
+
+        random_seed: int = int(str(time()).replace(".", "")[12:19])
+        logging.info(f"{random_seed=}")
+
+        random_number_generator: Generator[float, None, None] = (
+            default_random_number_generator_from_numpy(seed=random_seed)
+        )
+
     heightmap: np.ndarray = generate_terrain_heightmap(
         random_number_generator=random_number_generator,
         width=256,
@@ -561,9 +625,7 @@ def main(*args: Any, **kwargs: Any) -> None:
         persistence=configuration["terrain_persistence_factor"],
         sigma=configuration["gaussian_sigma"],
         passes=configuration["gaussian_pass_count"],
-        initial_scale=configuration[
-            "terrain_initial_scale"
-        ],
+        initial_scale=configuration["terrain_initial_scale"],
     )
 
     create_visualization(heightmap=heightmap)

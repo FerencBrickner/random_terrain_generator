@@ -6,3 +6,6 @@ terrain_generation:
   octaves: 5 #5
   persistence: 0.5 #0.5
   initial_scale: 64 #64
+
+prng:
+  prng_type: xorshift32
