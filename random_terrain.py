@@ -1,4 +1,4 @@
-from typing import Generator, Any, Optional
+from typing import Generator, Any, Optional, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
@@ -553,6 +553,72 @@ def create_visualization(*, heightmap: np.ndarray) -> None:
     plt.show()
 
 
+def log_heightmap_statistics(heightmap: np.ndarray) -> None:
+    if heightmap is None or heightmap.size == 0:
+        logging.info("Heightmap is empty or None")
+        return None
+
+    heightmap_shape: Tuple[int, ...] = heightmap.shape
+    total_number_of_values: int = int(heightmap.size)
+
+    minimum_height_value: float = float(np.min(heightmap))
+    maximum_height_value: float = float(np.max(heightmap))
+    mean_height_value: float = float(np.mean(heightmap))
+    median_height_value: float = float(np.median(heightmap))
+    standard_deviation_of_height_values: float = float(np.std(heightmap))
+    variance_of_height_values: float = float(np.var(heightmap))
+
+    range_of_height_values: float = maximum_height_value - minimum_height_value
+
+    twenty_fifth_percentile_value: float = float(np.percentile(heightmap, 25))
+    seventy_fifth_percentile_value: float = float(np.percentile(heightmap, 75))
+    interquartile_range_value: float = seventy_fifth_percentile_value - twenty_fifth_percentile_value
+
+    skewness_estimate: float = float(
+        np.mean(((heightmap - mean_height_value) / (standard_deviation_of_height_values + 1e-12)) ** 3)
+    )
+    kurtosis_estimate: float = float(
+        np.mean(((heightmap - mean_height_value) / (standard_deviation_of_height_values + 1e-12)) ** 4) - 3.0
+    )
+
+    number_of_unique_height_values: int = int(len(np.unique(heightmap)))
+
+    gradient_along_x_axis: np.ndarray
+    gradient_along_y_axis: np.ndarray
+    gradient_along_x_axis, gradient_along_y_axis = np.gradient(heightmap)
+
+    gradient_magnitude_array: np.ndarray = np.sqrt(
+        gradient_along_x_axis ** 2 + gradient_along_y_axis ** 2
+    )
+
+    mean_gradient_magnitude: float = float(np.mean(gradient_magnitude_array))
+    maximum_gradient_magnitude: float = float(np.max(gradient_magnitude_array))
+
+    histogram_counts_array: np.ndarray
+    histogram_bin_edges_array: np.ndarray
+    histogram_counts_array, histogram_bin_edges_array = np.histogram(heightmap, bins=20)
+
+    logging.info(f"Heightmap shape: {heightmap_shape}")
+    logging.info(f"Total number of values: {total_number_of_values}")
+    logging.info(f"Minimum height value: {minimum_height_value}")
+    logging.info(f"Maximum height value: {maximum_height_value}")
+    logging.info(f"Mean height value: {mean_height_value}")
+    logging.info(f"Median height value: {median_height_value}")
+    logging.info(f"Standard deviation: {standard_deviation_of_height_values}")
+    logging.info(f"Variance: {variance_of_height_values}")
+    logging.info(f"Range of values: {range_of_height_values}")
+    logging.info(f"25th percentile: {twenty_fifth_percentile_value}")
+    logging.info(f"75th percentile: {seventy_fifth_percentile_value}")
+    logging.info(f"Interquartile range: {interquartile_range_value}")
+    logging.info(f"Skewness estimate: {skewness_estimate}")
+    logging.info(f"Kurtosis estimate: {kurtosis_estimate}")
+    logging.info(f"Number of unique values: {number_of_unique_height_values}")
+    logging.info(f"Mean gradient magnitude: {mean_gradient_magnitude}")
+    logging.info(f"Maximum gradient magnitude: {maximum_gradient_magnitude}")
+    logging.info(f"Histogram counts: {histogram_counts_array.tolist()}")
+    logging.info(f"Histogram bin edges: {histogram_bin_edges_array.tolist()}")
+
+
 def main(*args: Any, **kwargs: Any) -> None:
     """
     Run a demo producing and plotting a heightmap in 2D and 3D.
@@ -628,8 +694,10 @@ def main(*args: Any, **kwargs: Any) -> None:
         initial_scale=configuration["terrain_initial_scale"],
     )
 
+    log_heightmap_statistics(heightmap=heightmap)
+
     create_visualization(heightmap=heightmap)
 
-
+    
 if __name__ == "__main__":
     main()
