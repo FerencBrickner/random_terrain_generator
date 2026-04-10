@@ -8,4 +8,4 @@ terrain_generation:
   initial_scale: 64 #64
 
 prng:
-  prng_type: xorshift32
+  prng_type: logistic_map

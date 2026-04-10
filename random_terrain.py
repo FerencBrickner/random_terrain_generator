@@ -600,7 +600,7 @@ def main(*args: Any, **kwargs: Any) -> None:
     elif prng_type == "logistic_map":
         logging.info("Choosing Logistic Map as PRNG...")
 
-        random_seed: int = int(str(time()).replace(".", "")[12:19]) / 10**7
+        random_seed: float = int(str(time()).replace(".", "")[12:19]) / 10**7
         logging.info(f"{random_seed=}")
 
         random_number_generator: Generator[float, None, None] = (
