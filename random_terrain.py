@@ -268,33 +268,23 @@ def compute_bilinear_interpolation_on_a_2D_control_grid(
         y_fractional_offset
     )
 
-    # sample the four corner values from the control grid
+    # gradient vectors at corners
+    gradient_00 = grid[y_integer_grid_cell_index, x_integer_grid_cell_index]
+    gradient_10 = grid[y_integer_grid_cell_index, x_integer_grid_cell_index + 1]
+    gradient_01 = grid[y_integer_grid_cell_index + 1, x_integer_grid_cell_index]
+    gradient_11 = grid[y_integer_grid_cell_index + 1, x_integer_grid_cell_index + 1]
 
-    corner_value_00: float = float(
-        grid[y_integer_grid_cell_index, x_integer_grid_cell_index]
-    )
-    corner_value_10: float = float(
-        grid[y_integer_grid_cell_index, x_integer_grid_cell_index + 1]
-    )
-    corner_value_01: float = float(
-        grid[y_integer_grid_cell_index + 1, x_integer_grid_cell_index]
-    )
-    corner_value_11: float = float(
-        grid[y_integer_grid_cell_index + 1, x_integer_grid_cell_index + 1]
-    )
+    # dot products 
+    n00 = gradient_00[0] * x_fractional_offset  + gradient_00[1] * y_fractional_offset
+    n10 = gradient_10[0] * (x_fractional_offset-1.0) + gradient_10[1] * y_fractional_offset
+    n01 = gradient_01[0] * x_fractional_offset   + gradient_01[1] * (y_fractional_offset-1.0)
+    n11 = gradient_11[0] * (x_fractional_offset-1.0) + gradient_11[1] * (y_fractional_offset-1.0)
 
-    # interpolate horizontally on top and bottom rows using smooth weights
+    # interpolation logic
+    top = n00 * (1.0 - smootherstep_x) + n10 * smootherstep_x
+    bottom = n01 * (1.0 - smootherstep_x) + n11 * smootherstep_x
 
-    top: float = (
-        corner_value_00 * (1.0 - smootherstep_x) + corner_value_10 * smootherstep_x
-    )
-    bottom: float = (
-        corner_value_01 * (1.0 - smootherstep_x) + corner_value_11 * smootherstep_x
-    )
-
-    # interpolate vertically between the horizontal interpolants
-
-    interpolated_value: float = top * (1.0 - smootherstep_y) + bottom * smootherstep_y
+    interpolated_value = top * (1.0 - smootherstep_y) + bottom * smootherstep_y
 
     return interpolated_value
 
@@ -325,12 +315,27 @@ def generate_noise(
     # fill the control grid with values from the injected RNG
     # map RNG output from [0,1) to [-1,1) to center layers around zero
 
-    grid: np.ndarray = np.array(
-        [
-            [next(random_number_generator) * 2.0 - 1.0 for _ in range(grid_width)]
-            for _ in range(grid_height)
-        ],
-        dtype=np.float64,
+    grid: np.ndarray = np.dstack(
+        (
+        np.cos(
+            np.array(
+                [
+                    [next(random_number_generator) * 2.0 * np.pi for _ in range(grid_width)]
+                    for _ in range(grid_height)
+                ],
+                dtype=np.float64,
+            )
+        ),
+        np.sin(
+            np.array(
+                [
+                    [next(random_number_generator) * 2.0 * np.pi for _ in range(grid_width)]
+                    for _ in range(grid_height)
+                ],
+                dtype=np.float64,
+                )
+            ),
+        )
     )
 
     # prepare output noise array for this octave
