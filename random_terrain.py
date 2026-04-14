@@ -66,6 +66,8 @@ def load_configuration_yaml(*, config_path: str) -> dict:
     
     terrain_initial_scale = float(terrain_generation["initial_scale"])
 
+    terrain_continent_effect_strength = float(terrain_generation["continent_effect_strength"])
+
     prng_type = prng["prng_type"]
 
     if terrain_initial_scale <= 0:
@@ -77,6 +79,7 @@ def load_configuration_yaml(*, config_path: str) -> dict:
         "terrain_octave_count": terrain_octave_count,
         "terrain_persistence_factor": terrain_persistence_factor,
         "terrain_initial_scale": terrain_initial_scale,
+        "terrain_continent_effect_strength": terrain_continent_effect_strength,
         "prng_type": prng_type,
     }
 
@@ -380,6 +383,15 @@ def normalize_terrain_to_the_0_to_1_range_safely(*, terrain: np.ndarray) -> np.n
     return np.zeros_like(terrain)
 
 
+def apply_continental_falloff(heightmap: np.ndarray, strength: int | float = 1.0) -> np.ndarray:
+    logging.info("Starting to add continent effect...")
+    height, width = heightmap.shape
+    y, x = np.ogrid[-1:1:complex(height), -1:1:complex(width)]
+    distance = np.sqrt(x * x + y * y)
+    mask = np.clip(1.0 - distance, 0.0, 1.0) ** strength
+    return heightmap * mask
+
+
 def generate_terrain_heightmap(
     *,
     random_number_generator: Generator[float, None, None],
@@ -390,6 +402,7 @@ def generate_terrain_heightmap(
     sigma: float,
     passes: int,
     initial_scale: int | None = None,
+    continent_effect_strength: int | float,
 ) -> np.ndarray:
     """
     Idea: https://www.geeksforgeeks.org/maths/what-is-bilinear-interpolation/
@@ -449,6 +462,10 @@ def generate_terrain_heightmap(
     logging.info("Starting to normalize terrain...")
     terrain = normalize_terrain_to_the_0_to_1_range_safely(terrain=terrain)
     logging.info("Terrain was normalized...")
+
+    logging.info("Starting to add continent effect...")
+    terrain = apply_continental_falloff(terrain)
+    logging.info("Continent effect was added...")
 
     logging.info("Adding gaussian blur to map...")
     terrain = add_gaussian_blur_to_map(terrain, sigma=sigma, passes=passes)
@@ -698,6 +715,7 @@ def main(*args: Any, **kwargs: Any) -> None:
         sigma=configuration["gaussian_sigma"],
         passes=configuration["gaussian_pass_count"],
         initial_scale=configuration["terrain_initial_scale"],
+        continent_effect_strength=configuration["terrain_continent_effect_strength"]
     )
 
     log_heightmap_statistics(heightmap=heightmap)
