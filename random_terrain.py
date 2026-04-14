@@ -8,6 +8,8 @@ import yaml
 from PRNGs.xorshift32 import xorshift_32_float_generator
 from PRNGs.wichmann_hill import wichmann_hill_generator
 from PRNGs.logistic_map import logistic_map_pseudorandom_generator
+import json
+from db import Session, TerrainStats
 
 
 class GaussianSigmaShouldBePositive(Exception):
@@ -619,7 +621,7 @@ def create_visualization(*, heightmap: np.ndarray) -> None:
     logging.info("All plots were displayed...")
 
 
-def log_heightmap_statistics(*, heightmap: np.ndarray, prng_type: str) -> None:
+def log_heightmap_statistics_into_database_and_console(*, heightmap: np.ndarray, prng_type: str) -> None:
     if heightmap is None or heightmap.size == 0:
         logging.info("Heightmap is empty or None")
         return None
@@ -684,6 +686,35 @@ def log_heightmap_statistics(*, heightmap: np.ndarray, prng_type: str) -> None:
     logging.info(f"Maximum gradient magnitude: {maximum_gradient_magnitude}")
     logging.info(f"Histogram counts: {histogram_counts_array.tolist()}")
     logging.info(f"Histogram bin edges: {histogram_bin_edges_array.tolist()}")
+
+    session = Session()
+    try:
+        row = TerrainStats(
+            prng_type=prng_type,
+            heightmap_shape=str(heightmap_shape),
+            total_values=total_number_of_values,
+            min=minimum_height_value,
+            max=maximum_height_value,
+            mean=mean_height_value,
+            median=median_height_value,
+            std=standard_deviation_of_height_values,
+            variance=variance_of_height_values,
+            range=range_of_height_values,
+            percentile25=twenty_fifth_percentile_value,
+            percentile75=seventy_fifth_percentile_value,
+            interquartile_range=interquartile_range_value,
+            skewness=skewness_estimate,
+            kurtosis=kurtosis_estimate,
+            unique_values=number_of_unique_height_values,
+            mean_gradient=mean_gradient_magnitude,
+            max_gradient=maximum_gradient_magnitude,
+            histogram_counts=json.dumps(histogram_counts_array.tolist()),
+            histogram_bins=json.dumps(histogram_bin_edges_array.tolist()),
+        )
+        session.add(row)
+        session.commit()
+    finally:
+        session.close()
 
 
 def main(*args: Any, **kwargs: Any) -> None:
@@ -762,7 +793,7 @@ def main(*args: Any, **kwargs: Any) -> None:
         continent_effect_strength=configuration["terrain_continent_effect_strength"]
     )
 
-    log_heightmap_statistics(heightmap=heightmap, prng_type=prng_type)
+    log_heightmap_statistics_into_database_and_console(heightmap=heightmap, prng_type=prng_type)
 
     create_visualization(heightmap=heightmap)
 
