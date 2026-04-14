@@ -1,11 +1,11 @@
 gaussian_blur:
   sigma: 1 #1
-  passes: 3 #2
+  passes: 2 #2
 
 terrain_generation:
   octaves: 5 #5
   persistence: 0.5 #0.5
-  initial_scale: 64 #64
+  initial_scale: 128 #128
 
 prng:
-  prng_type: logistic_map
+  prng_type: xorshift32

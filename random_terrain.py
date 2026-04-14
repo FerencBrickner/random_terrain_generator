@@ -540,6 +540,7 @@ def creating_3d_plot(*, heightmap: np.ndarray) -> None:
     axes_3d.set_xlabel("X")
     axes_3d.set_ylabel("Y")
     axes_3d.set_zlabel("Elevation")
+    axes_3d.set_box_aspect((1, 1, 0.5))
 
     logging.info("3D plot was created...")
 
