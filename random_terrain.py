@@ -1,6 +1,7 @@
 from typing import Generator, Any, Optional, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LightSource
 import logging
 import time
 import yaml
@@ -564,8 +565,44 @@ def creating_3d_plot(*, heightmap: np.ndarray) -> None:
     logging.info("3D plot was created...")
 
 
+def creating_hillshade_plot(*, heightmap: np.ndarray) -> None:
+    """Idea: https://matplotlib.org/"""
+    logging.info("Creating Hillshade plot...")
+    figure = plt.figure(figsize=(8, 6))
+    axes = figure.add_subplot(1, 1, 1)
+
+    # Light source for shaded relief
+    light_source = LightSource(azdeg=315, altdeg=20)
+
+    # Blend terrain colors with hillshade
+    shaded_image = light_source.shade(
+        heightmap,
+        cmap=plt.cm.terrain,
+        vert_exag=1.0,
+        blend_mode="overlay",
+    )
+
+    axes.imshow(shaded_image, origin="lower")
+    axes.set_title("Terrain Generator - Hillshade")
+    axes.set_xlabel("X")
+    axes.set_ylabel("Y")
+    logging.info("Hillshade plot was created...")
+
+
+def creating_height_histogram(*, heightmap: np.ndarray) -> None:
+    logging.info("Creating height histogram...")
+    figure = plt.figure(figsize=(8, 6))
+    axes = figure.add_subplot(1, 1, 1)
+
+    axes.hist(heightmap.flatten(), bins=30)
+    axes.set_title("Height Distribution")
+    logging.info("Height histogram was created...")
+
+
 def create_visualization(*, heightmap: np.ndarray) -> None:
     """Idea: https://matplotlib.org/"""
+
+    creating_height_histogram(heightmap=heightmap)
 
     creating_2d_plot(heightmap=heightmap)
 
@@ -573,12 +610,16 @@ def create_visualization(*, heightmap: np.ndarray) -> None:
 
     creating_3d_plot(heightmap=heightmap)
 
+    creating_hillshade_plot(heightmap=heightmap)
+
     logging.info("Displaying all plots...")
 
     plt.show()
 
+    logging.info("All plots were displayed...")
 
-def log_heightmap_statistics(heightmap: np.ndarray) -> None:
+
+def log_heightmap_statistics(*, heightmap: np.ndarray, prng_type: str) -> None:
     if heightmap is None or heightmap.size == 0:
         logging.info("Heightmap is empty or None")
         return None
@@ -623,6 +664,7 @@ def log_heightmap_statistics(heightmap: np.ndarray) -> None:
     histogram_bin_edges_array: np.ndarray
     histogram_counts_array, histogram_bin_edges_array = np.histogram(heightmap, bins=20)
 
+    logging.info(f"PRNG type: {prng_type}")
     logging.info(f"Heightmap shape: {heightmap_shape}")
     logging.info(f"Total number of values: {total_number_of_values}")
     logging.info(f"Minimum height value: {minimum_height_value}")
@@ -720,7 +762,7 @@ def main(*args: Any, **kwargs: Any) -> None:
         continent_effect_strength=configuration["terrain_continent_effect_strength"]
     )
 
-    log_heightmap_statistics(heightmap=heightmap)
+    log_heightmap_statistics(heightmap=heightmap, prng_type=prng_type)
 
     create_visualization(heightmap=heightmap)
 
