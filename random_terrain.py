@@ -383,12 +383,13 @@ def normalize_terrain_to_the_0_to_1_range_safely(*, terrain: np.ndarray) -> np.n
     return np.zeros_like(terrain)
 
 
-def apply_continental_falloff(heightmap: np.ndarray, strength: int | float = 1.0) -> np.ndarray:
+def apply_continental_falloff(heightmap: np.ndarray, continent_effect_strength: int | float) -> np.ndarray:
     logging.info("Starting to add continent effect...")
+    logging.info(f"{continent_effect_strength=}")
     height, width = heightmap.shape
     y, x = np.ogrid[-1:1:complex(height), -1:1:complex(width)]
     distance = np.sqrt(x * x + y * y)
-    mask = np.clip(1.0 - distance, 0.0, 1.0) ** strength
+    mask = np.clip(1.0 - distance, 0.0, 1.0) ** continent_effect_strength
     return heightmap * mask
 
 
@@ -430,6 +431,7 @@ def generate_terrain_heightmap(
         initial_scale = 1
 
     logging.info(f"{initial_scale=}")
+    logging.info(f"{continent_effect_strength=}")
 
     logging.info("Initializing the final terrain array and synthesis parameters...")
 
@@ -464,7 +466,7 @@ def generate_terrain_heightmap(
     logging.info("Terrain was normalized...")
 
     logging.info("Starting to add continent effect...")
-    terrain = apply_continental_falloff(terrain)
+    terrain = apply_continental_falloff(heightmap=terrain, continent_effect_strength=continent_effect_strength)
     logging.info("Continent effect was added...")
 
     logging.info("Adding gaussian blur to map...")
@@ -540,7 +542,7 @@ def creating_3d_plot(*, heightmap: np.ndarray) -> None:
     axes_3d = figure_3d.add_subplot(1, 1, 1, projection="3d")
 
     # plot the surface; linewidth set to 0 to avoid grid lines, antialiased for smoother appearance
-
+    
     plot_surface = axes_3d.plot_surface(
         x_coordinates_meshgrid,
         y_coordinates_meshgrid,
@@ -708,8 +710,8 @@ def main(*args: Any, **kwargs: Any) -> None:
 
     heightmap: np.ndarray = generate_terrain_heightmap(
         random_number_generator=random_number_generator,
-        width=256,
-        height=256,
+        width=512,
+        height=512,
         octaves=configuration["terrain_octave_count"],
         persistence=configuration["terrain_persistence_factor"],
         sigma=configuration["gaussian_sigma"],
