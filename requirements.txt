@@ -2,3 +2,5 @@ numpy
 matplotlib
 PyYAML
 sqlalchemy
+scikit-learn
+pandas
