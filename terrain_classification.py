@@ -1,5 +1,6 @@
 """
 Train a PRNG classifier from terrain statistics and show which artifacts each PRNG tends to produce.
+IDEA: https://pypi.org/project/scikit-learn/
 """
 
 from __future__ import annotations
