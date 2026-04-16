@@ -9,4 +9,4 @@ terrain_generation:
   continent_effect_strength: 0
 
 prng:
-  prng_type: xorshift32
+  prng_type: logistic_map
