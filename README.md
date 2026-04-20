@@ -13,11 +13,11 @@ The project has two main parts:
      - smootherstep polynomial shaping with Perlin noise
      - bilinear interpolation
    - Plots the following:
-    - 2D plot
-    - 3D plot
-    - Hillshade plot
-    - Contour plot
-    - heightmap histogram
+     - 2D plot
+     - 3D plot
+     - Hillshade plot
+     - Contour plot
+     - heightmap histogram
 
 2. **Terrain classification**
    - Uses a **multi-class supervised classification** approach with **gradient boosted decision trees**.
