@@ -4,3 +4,4 @@ PyYAML
 sqlalchemy
 scikit-learn
 pandas
+pytest
