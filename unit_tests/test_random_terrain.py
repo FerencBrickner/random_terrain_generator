@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from random_terrain import normalize_terrain_to_the_0_to_1_range_safely
+from random_terrain import apply_smootherstep_polynomial_perlin_noise
 
 
 def test_normalizes_basic_1d_array():
@@ -61,3 +62,36 @@ def test_single_value_array_returns_zero():
 
     expected = np.array([0.0])
     assert np.array_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "float_input, expected",
+    [
+        (0.0, 0.0),
+        (1.0, 1.0),
+        (0.5, 0.5),
+        (0.25, 0.103515625),
+        (0.75, 0.896484375),
+    ],
+)
+def test_apply_smootherstep_polynomial_perlin_noise_expected_values(
+    float_input, expected
+):
+    result = apply_smootherstep_polynomial_perlin_noise(float_input)
+
+    assert result == pytest.approx(expected, rel=0, abs=0)
+
+
+def test_apply_smootherstep_polynomial_perlin_noise_monotonic_in_unit_interval():
+    values = [
+        apply_smootherstep_polynomial_perlin_noise(x)
+        for x in [0.0, 0.1, 0.2, 0.5, 0.8, 1.0]
+    ]
+
+    assert values == sorted(values)
+
+
+def test_apply_smootherstep_polynomial_perlin_noise_returns_float():
+    result = apply_smootherstep_polynomial_perlin_noise(0.5)
+
+    assert isinstance(result, float)

@@ -260,4 +260,3 @@ def test_wichmann_hill_generator_values_are_floats():
     value = next(gen)
 
     assert isinstance(value, float)
-
