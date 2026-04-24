@@ -89,6 +89,7 @@ The goal of the project is to understand whether different PRNGs leave detectabl
 
 ## Notes
 
+- The random terrain generator Python script and the terrain classification Python script are both run locally as console applications
 - The terrain database is serverless and stored locally in SQLite.
 - The classification pipeline is designed for tabular statistical data.
 - Heightmap statistics are the main signal used for model training and interpretation.
