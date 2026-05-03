@@ -388,3 +388,56 @@ def test_continental_falloff_with_string_continent_effect_nulls_the_heightmap():
     expected_returnvalue = np.zeros((10, 10), dtype=float)
 
     assert returnvalue == pytest.approx(expected_returnvalue, rel=1e-2, abs=1e-2)
+
+
+@pytest.fixture
+def control_grid() -> np.ndarray:
+    return np.array(
+        [
+            [[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]],
+            [[-1.0, 0.5], [0.5, -1.0], [2.0, 0.0]],
+            [[0.25, -0.75], [1.5, 0.25], [-0.5, 1.25]],
+        ],
+        dtype=np.float64,
+    )
+
+
+def test_return_type_of_compute_bilinear_interpolation_on_a_2D_control_grid(control_grid: np.ndarray):
+    value = compute_bilinear_interpolation_on_a_2D_control_grid(
+        control_grid, 1.25, 0.75
+    )
+    assert isinstance(value, (float, np.floating))
+
+
+def test_zero_at_integer_grid_point_of_compute_bilinear_interpolation_on_a_2D_control_grid(control_grid: np.ndarray):
+    value = compute_bilinear_interpolation_on_a_2D_control_grid(
+        control_grid, 1.0, 1.0
+    )
+    assert value == pytest.approx(0.0)
+
+
+def test_deterministic_nature_of_compute_bilinear_interpolation_on_a_2D_control_grid(control_grid: np.ndarray):
+    x, y = 1.25, 0.75
+    v1 = compute_bilinear_interpolation_on_a_2D_control_grid(control_grid, x, y)
+    v2 = compute_bilinear_interpolation_on_a_2D_control_grid(control_grid, x, y)
+    assert v1 == pytest.approx(v2)
+
+
+def test_known_value_of_compute_bilinear_interpolation_on_a_2D_control_grid(control_grid: np.ndarray):
+    x, y = 1.25, 0.75
+
+    expected: float =  0.2317814826965332
+
+    value = compute_bilinear_interpolation_on_a_2D_control_grid(control_grid, x, y)
+    assert value == pytest.approx(expected, rel=1e-6, abs=1e-6)
+
+
+def test_speed_of_compute_bilinear_interpolation_on_a_2D_control_grid(control_grid: np.ndarray):
+    x, y = 1.25, 0.75
+
+    start = time.perf_counter()
+    for _ in range(20_000):
+        compute_bilinear_interpolation_on_a_2D_control_grid(control_grid, x, y)
+    elapsed = time.perf_counter() - start
+
+    assert elapsed < 2.0
