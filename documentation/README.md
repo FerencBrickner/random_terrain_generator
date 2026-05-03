@@ -87,6 +87,30 @@ These statistics are used later for analysis and classification.
 
 The goal of the project is to understand whether different PRNGs leave detectable fingerprints in generated terrain and to visualize those differences in a reproducible way.
 
+## Testing and Automation
+
+### Unit tests
+
+This project includes unit tests to verify the correctness of the core terrain generation and PRNG logic. These tests help ensure that changes do not accidentally break important behavior.
+
+The unit tests focus on areas such as:
+
+- returntype assertions
+- performance checks
+- returnvalue assertions
+
+### GitHub Actions automated unit tests
+
+The repository includes a GitHub Actions workflow that runs the unit tests automatically on every push. This provides continuous verification that the project still works after each change is committed and pushed to the remote repository.
+
+The automated pipeline:
+
+- checks out the repository
+- installs the required dependencies
+- runs `pytest`
+- shows test output in the GitHub Actions logs
+- can generate an HTML test report
+
 ## Notes
 
 - The random terrain generator Python script and the terrain classification Python script are both run locally as console applications
