@@ -12,6 +12,8 @@ from random_terrain import compute_bilinear_interpolation_on_a_2D_control_grid
 from random_terrain import apply_continental_falloff
 from random_terrain import convolve_rows_for_gaussian_blur
 from random_terrain import convolve_columns_for_gaussian_blur
+from random_terrain import compute_1d_kernel_for_gaussian_blur
+from random_terrain import compute_cutoff_radius_of_gaussian_blur
 
 
 def test_normalizes_basic_1d_array():
@@ -497,6 +499,33 @@ def test_convolve_rows_for_gaussian_blur_returnvalue():
     np.testing.assert_allclose(result, expected)
 
 
+def test_convolve_rows_for_gaussian_blur_deterministic():
+    padded_array = np.array(
+        [
+            [0, 1, 2, 3, 0],
+            [4, 5, 6, 7, 0],
+            [8, 9, 10, 11, 0],
+        ],
+        dtype=np.float64,
+    )
+    kernel_1d = np.array([1, 2, 1], dtype=np.float64) / 4
+    map_array = np.zeros((3, 3), dtype=np.float64)
+
+    result_1 = convolve_rows_for_gaussian_blur(
+        padded_array=padded_array,
+        kernel_1d=kernel_1d,
+        map_array=map_array,
+    )
+
+    result_2 = convolve_rows_for_gaussian_blur(
+        padded_array=padded_array,
+        kernel_1d=kernel_1d,
+        map_array=map_array,
+    )
+
+    np.testing.assert_allclose(result_1, result_2)
+
+
 def test_convolve_rows_for_gaussian_blur_does_not_raise_exception():
     padded_array = np.array(
         [
@@ -580,6 +609,33 @@ def test_convolve_columns_for_gaussian_blur_returnvalue():
     np.testing.assert_allclose(result, expected)
 
 
+def test_convolve_columns_for_gaussian_blur_deterministic():
+    result_rows = np.array(
+        [
+            [1.0, 2.0, 2.0],
+            [5.0, 6.0, 5.0],
+            [9.0, 10.0, 8.0],
+        ],
+        dtype=np.float64,
+    )
+    kernel_1d = np.array([1, 2, 1], dtype=np.float64) / 4
+    map_array = np.zeros((1, 3), dtype=np.float64)
+
+    result_1 = convolve_columns_for_gaussian_blur(
+        result_rows=result_rows,
+        kernel_1d=kernel_1d,
+        map_array=map_array,
+    )
+
+    result_2 = convolve_columns_for_gaussian_blur(
+        result_rows=result_rows,
+        kernel_1d=kernel_1d,
+        map_array=map_array,
+    )
+
+    np.testing.assert_allclose(result_1, result_2)
+
+
 def test_convolve_columns_for_gaussian_blur_does_not_raise_exception():
     result_rows = np.array(
         [
@@ -616,4 +672,101 @@ def test_convolve_columns_for_gaussian_blur_speed():
     elapsed = time.perf_counter() - start
 
     assert result.shape == (254, 256)
+    assert elapsed < 1.0
+
+
+def test_compute_1d_kernel_for_gaussian_blur_returntype():
+    result = compute_1d_kernel_for_gaussian_blur(sigma=1.0, radius=2)
+
+    assert isinstance(result, np.ndarray)
+
+
+def test_compute_1d_kernel_for_gaussian_blur_returntype_dtype():
+    result = compute_1d_kernel_for_gaussian_blur(sigma=1.0, radius=2)
+
+    assert result.dtype == np.float64
+
+
+def test_compute_1d_kernel_for_gaussian_blur_returnshape():
+    result = compute_1d_kernel_for_gaussian_blur(sigma=1.0, radius=2)
+
+    assert result.shape == (5,)
+
+
+def test_compute_1d_kernel_for_gaussian_blur_returnvalue():
+    sigma = 1.0
+    radius = 2
+
+    result = compute_1d_kernel_for_gaussian_blur(sigma=sigma, radius=radius)
+
+    x_axis = np.arange(-radius, radius + 1, dtype=np.float64)
+    expected = np.exp(-0.5 * (x_axis / sigma) ** 2)
+    expected /= float(expected.sum())
+
+    np.testing.assert_allclose(result, expected)
+
+
+def test_compute_1d_kernel_for_gaussian_blur_deterministic_nature():
+    result_1 = compute_1d_kernel_for_gaussian_blur(sigma=1.0, radius=2)
+    result_2 = compute_1d_kernel_for_gaussian_blur(sigma=1.0, radius=2)
+
+    np.testing.assert_allclose(result_1, result_2)
+
+
+def test_compute_1d_kernel_for_gaussian_blur_does_not_raise_exception():
+    try:
+        compute_1d_kernel_for_gaussian_blur(sigma=1.0, radius=2)
+    except Exception as exc:
+        pytest.fail(
+            f"compute_1d_kernel_for_gaussian_blur raised an exception: {exc!r}"
+        )
+
+
+def test_compute_1d_kernel_for_gaussian_blur_speed():
+    start = time.perf_counter()
+
+    for _ in range(10_000):
+        compute_1d_kernel_for_gaussian_blur(sigma=1.0, radius=2)
+
+    elapsed = time.perf_counter() - start
+
+    assert elapsed < 1.0
+
+
+def test_compute_cutoff_radius_of_gaussian_blur_returntype():
+    result = compute_cutoff_radius_of_gaussian_blur(sigma=1.0)
+
+    assert isinstance(result, int)
+
+
+def test_compute_cutoff_radius_of_gaussian_blur_returnvalue():
+    result = compute_cutoff_radius_of_gaussian_blur(sigma=1.0)
+
+    assert result == 3
+
+
+def test_compute_cutoff_radius_of_gaussian_blur_deterministic_nature():
+    result_1 = compute_cutoff_radius_of_gaussian_blur(sigma=1.0)
+    result_2 = compute_cutoff_radius_of_gaussian_blur(sigma=1.0)
+
+    assert result_1 == result_2
+
+
+def test_compute_cutoff_radius_of_gaussian_blur_does_not_raise_exception():
+    try:
+        compute_cutoff_radius_of_gaussian_blur(sigma=1.0)
+    except Exception as exc:
+        pytest.fail(
+            f"compute_cutoff_radius_of_gaussian_blur raised an exception: {exc!r}"
+        )
+
+
+def test_compute_cutoff_radius_of_gaussian_blur_speed():
+    start = time.perf_counter()
+
+    for _ in range(100_000):
+        compute_cutoff_radius_of_gaussian_blur(sigma=1.0)
+
+    elapsed = time.perf_counter() - start
+
     assert elapsed < 1.0
