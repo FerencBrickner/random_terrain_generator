@@ -10,6 +10,8 @@ from random_terrain import normalize_terrain_to_the_0_to_1_range_safely
 from random_terrain import apply_smootherstep_polynomial_perlin_noise
 from random_terrain import compute_bilinear_interpolation_on_a_2D_control_grid
 from random_terrain import apply_continental_falloff
+from random_terrain import convolve_rows_for_gaussian_blur
+from random_terrain import convolve_columns_for_gaussian_blur
 
 
 def test_normalizes_basic_1d_array():
@@ -441,3 +443,177 @@ def test_speed_of_compute_bilinear_interpolation_on_a_2D_control_grid(control_gr
     elapsed = time.perf_counter() - start
 
     assert elapsed < 2.0
+
+
+def test_convolve_rows_for_gaussian_blur_returntype():
+    padded_array = np.array(
+        [
+            [0, 1, 2, 3, 0],
+            [4, 5, 6, 7, 0],
+            [8, 9, 10, 11, 0],
+        ],
+        dtype=np.float64,
+    )
+    kernel_1d = np.array([1, 2, 1], dtype=np.float64) / 4
+    map_array = np.zeros((3, 3), dtype=np.float64)
+
+    result = convolve_rows_for_gaussian_blur(
+        padded_array=padded_array,
+        kernel_1d=kernel_1d,
+        map_array=map_array,
+    )
+
+    assert isinstance(result, np.ndarray)
+    assert result.dtype == np.float64
+
+
+def test_convolve_rows_for_gaussian_blur_returnvalue():
+    padded_array = np.array(
+        [
+            [0, 1, 2, 3, 0],
+            [4, 5, 6, 7, 0],
+            [8, 9, 10, 11, 0],
+        ],
+        dtype=np.float64,
+    )
+    kernel_1d = np.array([1, 2, 1], dtype=np.float64) / 4
+    map_array = np.zeros((3, 3), dtype=np.float64)
+
+    result = convolve_rows_for_gaussian_blur(
+        padded_array=padded_array,
+        kernel_1d=kernel_1d,
+        map_array=map_array,
+    )
+
+    expected = np.array(
+        [
+            [1.0, 2.0, 2.0],
+            [5.0, 6.0, 5.0],
+            [9.0, 10.0, 8.0],
+        ],
+        dtype=np.float64,
+    )
+
+    np.testing.assert_allclose(result, expected)
+
+
+def test_convolve_rows_for_gaussian_blur_does_not_raise_exception():
+    padded_array = np.array(
+        [
+            [0, 1, 2, 3, 0],
+            [4, 5, 6, 7, 0],
+            [8, 9, 10, 11, 0],
+        ],
+        dtype=np.float64,
+    )
+    kernel_1d = np.array([1, 2, 1], dtype=np.float64) / 4
+    map_array = np.zeros((3, 3), dtype=np.float64)
+
+    try:
+        convolve_rows_for_gaussian_blur(
+            padded_array=padded_array,
+            kernel_1d=kernel_1d,
+            map_array=map_array,
+        )
+    except Exception as exc:
+        pytest.fail(f"convolve_rows_for_gaussian_blur raised {exc!r}")
+
+
+def test_convolve_rows_for_gaussian_blur_speed():
+    padded_array = np.tile(np.arange(512, dtype=np.float64), (256, 1))
+    kernel_1d = np.array([1, 2, 1], dtype=np.float64) / 4
+    map_array = np.zeros((256, 510), dtype=np.float64)
+
+    start = time.perf_counter()
+    result = convolve_rows_for_gaussian_blur(
+        padded_array=padded_array,
+        kernel_1d=kernel_1d,
+        map_array=map_array,
+    )
+    elapsed = time.perf_counter() - start
+
+    assert result.shape == (256, 510)
+    assert elapsed < 1.0
+
+
+def test_convolve_columns_for_gaussian_blur_returntype():
+    result_rows = np.array(
+        [
+            [1.0, 2.0, 2.0],
+            [5.0, 6.0, 5.0],
+            [9.0, 10.0, 8.0],
+        ],
+        dtype=np.float64,
+    )
+    kernel_1d = np.array([1, 2, 1], dtype=np.float64) / 4
+    map_array = np.zeros((1, 3), dtype=np.float64)
+
+    result = convolve_columns_for_gaussian_blur(
+        result_rows=result_rows,
+        kernel_1d=kernel_1d,
+        map_array=map_array,
+    )
+
+    assert isinstance(result, np.ndarray)
+    assert result.dtype == np.float64
+
+
+def test_convolve_columns_for_gaussian_blur_returnvalue():
+    result_rows = np.array(
+        [
+            [1.0, 2.0, 2.0],
+            [5.0, 6.0, 5.0],
+            [9.0, 10.0, 8.0],
+        ],
+        dtype=np.float64,
+    )
+    kernel_1d = np.array([1, 2, 1], dtype=np.float64) / 4
+    map_array = np.zeros((1, 3), dtype=np.float64)
+
+    result = convolve_columns_for_gaussian_blur(
+        result_rows=result_rows,
+        kernel_1d=kernel_1d,
+        map_array=map_array,
+    )
+
+    expected = np.array([[5.0, 6.0, 5.0]], dtype=np.float64)
+    np.testing.assert_allclose(result, expected)
+
+
+def test_convolve_columns_for_gaussian_blur_does_not_raise_exception():
+    result_rows = np.array(
+        [
+            [1.0, 2.0, 2.0],
+            [5.0, 6.0, 5.0],
+            [9.0, 10.0, 8.0],
+        ],
+        dtype=np.float64,
+    )
+    kernel_1d = np.array([1, 2, 1], dtype=np.float64) / 4
+    map_array = np.zeros((1, 3), dtype=np.float64)
+
+    try:
+        convolve_columns_for_gaussian_blur(
+            result_rows=result_rows,
+            kernel_1d=kernel_1d,
+            map_array=map_array,
+        )
+    except Exception as exc:
+        pytest.fail(f"convolve_columns_for_gaussian_blur raised {exc!r}")
+
+
+def test_convolve_columns_for_gaussian_blur_speed():
+    result_rows = np.tile(np.arange(256, dtype=np.float64).reshape(-1, 1), (1, 256))
+    kernel_1d = np.array([1, 2, 1], dtype=np.float64) / 4
+    map_array = np.zeros((254, 256), dtype=np.float64)
+
+    start = time.perf_counter()
+    result = convolve_columns_for_gaussian_blur(
+        result_rows=result_rows,
+        kernel_1d=kernel_1d,
+        map_array=map_array,
+    )
+    elapsed = time.perf_counter() - start
+
+    assert result.shape == (254, 256)
+    assert elapsed < 1.0
