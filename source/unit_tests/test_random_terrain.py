@@ -44,7 +44,26 @@ def test_normalizes_2d_array():
     assert np.allclose(result, expected)
 
 
-def test_constant_terrain_returns_zeros():
+def test_normalizes_2d_array_for_all_zero_elements():
+    terrain = np.array(
+        [
+            [0, 0],
+            [0, 0],
+        ]
+    )
+
+    result = normalize_terrain_to_the_0_to_1_range_safely(terrain=terrain)
+
+    expected = np.array(
+        [
+            [0, 0],
+            [0, 0],
+        ]
+    )
+    assert np.allclose(result, expected)
+
+
+def test_normalization_of_constant_terrain_returns_zeros():
     terrain = np.array([7.0, 7.0, 7.0])
 
     result = normalize_terrain_to_the_0_to_1_range_safely(terrain=terrain)
@@ -53,7 +72,7 @@ def test_constant_terrain_returns_zeros():
     assert np.array_equal(result, expected)
 
 
-def test_handles_negative_values_correctly():
+def test_normalization_handles_negative_values_correctly():
     terrain = np.array([-5.0, 0.0, 5.0])
 
     result = normalize_terrain_to_the_0_to_1_range_safely(terrain=terrain)
@@ -62,7 +81,7 @@ def test_handles_negative_values_correctly():
     assert np.allclose(result, expected)
 
 
-def test_single_value_array_returns_zero():
+def test_normalization_single_value_array_returns_zero():
     terrain = np.array([42.0])
 
     result = normalize_terrain_to_the_0_to_1_range_safely(terrain=terrain)
@@ -371,7 +390,7 @@ def test_continental_falloff_with_zero_continent_effect_strength_does_not_modify
     assert returnvalue == pytest.approx(expected_returnvalue, rel=0, abs=0)
 
 
-def test_continental_falloff_with_string_continent_effect_nulls_the_heightmap():
+def test_continental_falloff_with_strong_continent_effect_nulls_the_heightmap():
     heightmap = heightmap = np.array(
         [
             [0.582, 0.143, 0.764, 0.921, 0.334, 0.615, 0.278, 0.489, 0.712, 0.051],
@@ -392,6 +411,74 @@ def test_continental_falloff_with_string_continent_effect_nulls_the_heightmap():
     expected_returnvalue = np.zeros((10, 10), dtype=float)
 
     assert returnvalue == pytest.approx(expected_returnvalue, rel=1e-2, abs=1e-2)
+
+
+def test_continental_falloff_with_very_strong_continent_effect_nulls_the_heightmap():
+    heightmap = heightmap = np.array(
+        [
+            [0.582, 0.143, 0.764, 0.921, 0.334, 0.615, 0.278, 0.489, 0.712, 0.051],
+            [0.843, 0.227, 0.391, 0.675, 0.184, 0.952, 0.438, 0.126, 0.593, 0.807],
+            [0.319, 0.744, 0.086, 0.558, 0.991, 0.402, 0.673, 0.215, 0.347, 0.768],
+            [0.694, 0.531, 0.248, 0.879, 0.117, 0.463, 0.725, 0.394, 0.682, 0.159],
+            [0.905, 0.276, 0.618, 0.341, 0.792, 0.054, 0.487, 0.663, 0.128, 0.570],
+            [0.451, 0.822, 0.193, 0.736, 0.299, 0.641, 0.875, 0.368, 0.514, 0.247],
+            [0.166, 0.589, 0.931, 0.074, 0.426, 0.758, 0.203, 0.847, 0.492, 0.635],
+            [0.713, 0.358, 0.547, 0.189, 0.864, 0.421, 0.096, 0.672, 0.305, 0.944],
+            [0.238, 0.697, 0.412, 0.583, 0.154, 0.826, 0.369, 0.741, 0.027, 0.658],
+            [0.771, 0.104, 0.495, 0.887, 0.316, 0.552, 0.229, 0.603, 0.918, 0.140],
+        ]
+    )
+
+    returnvalue = apply_continental_falloff(heightmap, 100)
+
+    expected_returnvalue = np.zeros((10, 10), dtype=float)
+
+    assert returnvalue == pytest.approx(expected_returnvalue, rel=1e-2, abs=1e-2)
+
+
+def test_continental_falloff_with_weak_continent_effect_does_not_null_the_heightmap():
+    heightmap = heightmap = np.array(
+        [
+            [0.582, 0.143, 0.764, 0.921, 0.334, 0.615, 0.278, 0.489, 0.712, 0.051],
+            [0.843, 0.227, 0.391, 0.675, 0.184, 0.952, 0.438, 0.126, 0.593, 0.807],
+            [0.319, 0.744, 0.086, 0.558, 0.991, 0.402, 0.673, 0.215, 0.347, 0.768],
+            [0.694, 0.531, 0.248, 0.879, 0.117, 0.463, 0.725, 0.394, 0.682, 0.159],
+            [0.905, 0.276, 0.618, 0.341, 0.792, 0.054, 0.487, 0.663, 0.128, 0.570],
+            [0.451, 0.822, 0.193, 0.736, 0.299, 0.641, 0.875, 0.368, 0.514, 0.247],
+            [0.166, 0.589, 0.931, 0.074, 0.426, 0.758, 0.203, 0.847, 0.492, 0.635],
+            [0.713, 0.358, 0.547, 0.189, 0.864, 0.421, 0.096, 0.672, 0.305, 0.944],
+            [0.238, 0.697, 0.412, 0.583, 0.154, 0.826, 0.369, 0.741, 0.027, 0.658],
+            [0.771, 0.104, 0.495, 0.887, 0.316, 0.552, 0.229, 0.603, 0.918, 0.140],
+        ]
+    )
+
+    returnvalue = apply_continental_falloff(heightmap, 0.3)
+
+    expected_returnvalue = np.zeros((10, 10), dtype=float)
+
+    assert returnvalue != pytest.approx(expected_returnvalue, rel=1e-2, abs=1e-2)
+
+
+def test_continental_falloff_deterministic():
+    heightmap = heightmap = np.array(
+        [
+            [0.582, 0.143, 0.764, 0.921, 0.334, 0.615, 0.278, 0.489, 0.712, 0.051],
+            [0.843, 0.227, 0.391, 0.675, 0.184, 0.952, 0.438, 0.126, 0.593, 0.807],
+            [0.319, 0.744, 0.086, 0.558, 0.991, 0.402, 0.673, 0.215, 0.347, 0.768],
+            [0.694, 0.531, 0.248, 0.879, 0.117, 0.463, 0.725, 0.394, 0.682, 0.159],
+            [0.905, 0.276, 0.618, 0.341, 0.792, 0.054, 0.487, 0.663, 0.128, 0.570],
+            [0.451, 0.822, 0.193, 0.736, 0.299, 0.641, 0.875, 0.368, 0.514, 0.247],
+            [0.166, 0.589, 0.931, 0.074, 0.426, 0.758, 0.203, 0.847, 0.492, 0.635],
+            [0.713, 0.358, 0.547, 0.189, 0.864, 0.421, 0.096, 0.672, 0.305, 0.944],
+            [0.238, 0.697, 0.412, 0.583, 0.154, 0.826, 0.369, 0.741, 0.027, 0.658],
+            [0.771, 0.104, 0.495, 0.887, 0.316, 0.552, 0.229, 0.603, 0.918, 0.140],
+        ]
+    )
+
+    returnvalue_1 = apply_continental_falloff(heightmap, 30)
+    returnvalue_2 = apply_continental_falloff(heightmap, 30)
+
+    assert returnvalue_1 == pytest.approx(returnvalue_2, rel=1e-2, abs=1e-2)
 
 
 @pytest.fixture
