@@ -826,7 +826,7 @@ def log_heightmap_statistics_into_database_and_console(*, heightmap: np.ndarray,
     morans_i_spatial_correlation: float = calculate_morans_i_spatial_correlation(heightmap=heightmap)
     gearys_c_spatial_correlation: float = calculate_gearys_c_spatial_correlation(heightmap=heightmap)
     
-
+    logging.info("Logging statistics to the console...")
     logging.info(f"PRNG type: {prng_type}")
     logging.info(f"Heightmap shape: {heightmap_shape}")
     logging.info(f"Total number of values: {total_number_of_values}")
@@ -849,10 +849,17 @@ def log_heightmap_statistics_into_database_and_console(*, heightmap: np.ndarray,
     logging.info(f"Histogram bin edges: {histogram_bin_edges_array.tolist()}")
     logging.info(f"Moran's I spatial correlation: {morans_i_spatial_correlation}")
     logging.info(f"Geary's C spatial correlation: {gearys_c_spatial_correlation}")
-    
+    logging.info("Statistics were logged to the console....")
+
+    logging.info("Logging statistics to the database...")    
+    logging.info("Creating database session...")
 
     session = Session()
+
+    logging.info("Database session has been created...")
+
     try:
+        logging.info("Trying to create row for the database...")
         row = TerrainStats(
             prng_type=prng_type,
             heightmap_shape=str(heightmap_shape),
@@ -877,15 +884,33 @@ def log_heightmap_statistics_into_database_and_console(*, heightmap: np.ndarray,
             morans_i_spatial_correlation=morans_i_spatial_correlation,
             gearys_c_spatial_correlation=gearys_c_spatial_correlation
         )
+        logging.info("Row for the database has been created...")
+
+        logging.info("Inserting row to the database...")
         session.add(row)
+        logging.info("Database insertion was performed....")
+
+        logging.info("Committing changes...")
         session.commit()
+        logging.info("Changes were committed...")
     finally:
+        logging.info("Closing database session...")
         session.close()
+        logging.info("Database connection was closed...")
+        logging.info("Statistics were successfully logged to the database...")
 
 
-def main(*args: Any, **kwargs: Any) -> None:
+def main(*args: Any, should_i_create_visualizations: bool = True, **kwargs: Any) -> None:
     """
     Run a demo producing and plotting a heightmap in 2D and 3D.
+
+    Running the script once from PowerShell console:
+
+    python random_terrain.py
+
+    running the script multiple times from PowerShell console:
+
+    for ($iterationIndex = 0; $iterationIndex -lt 100; $iterationIndex++) {python random_terrain.py}
     """
     # instantiate RNG and generate a heightmap with coarser base scale and
     # moderate persistence so higher octaves do not dominate
@@ -898,6 +923,8 @@ def main(*args: Any, **kwargs: Any) -> None:
     logging.info(f"{prng_type=}")
 
     random_number_generator: Optional[Generator[float, None, None]] = None
+
+    logging.info("Selecting PRNG...")
 
     if prng_type == "xorshift32":
         logging.info("Choosing Xorshift32 as PRNG...")
@@ -947,6 +974,8 @@ def main(*args: Any, **kwargs: Any) -> None:
             default_random_number_generator_from_numpy(seed=random_seed)
         )
 
+    logging.info("PRNG has been selected...")
+
     heightmap: np.ndarray = generate_terrain_heightmap(
         random_number_generator=random_number_generator,
         width=512,
@@ -961,13 +990,16 @@ def main(*args: Any, **kwargs: Any) -> None:
 
     log_heightmap_statistics_into_database_and_console(heightmap=heightmap, prng_type=prng_type)
 
-    create_visualization(heightmap=heightmap)
-
-    """
-    running the script multiple times from PowerShell console:
-
-    for ($iterationIndex = 0; $iterationIndex -lt 100; $iterationIndex++) {python random_terrain.py}
-    """
+    if should_i_create_visualizations:
+        logging.info("Creating visualizations...")
+        create_visualization(heightmap=heightmap)
+        logging.info("Visualizations were created...")
     
+    else:
+        logging.warning("Visualizations are not created...")
+
+    logging.info("Ending the script...")
+
+
 if __name__ == "__main__":
     main()
