@@ -32,6 +32,10 @@ from db import Session, TerrainStats
 OUTPUT_DIRECTORY: Final[Path] = Path("terrain_prng_classification_output")
 
 
+class NoRowsFoundInTerrainStats(Exception):
+    pass
+
+
 @dataclass
 class PreparedDataset:
     feature_table: pd.DataFrame
@@ -44,7 +48,7 @@ def load_terrain_rows() -> pd.DataFrame:
         terrain_rows = database_session.query(TerrainStats).all()
 
     if not terrain_rows:
-        raise ValueError("No rows found in terrain_stats.")
+        raise NoRowsFoundInTerrainStats
 
     return pd.DataFrame(
         {
@@ -303,6 +307,8 @@ def print_prng_artifact_leaderboard(terrain_frame: pd.DataFrame) -> None:
         "histogram_count_dominance_ratio",
         "histogram_count_uniformity_score",
         "histogram_count_peak_to_mean_ratio",
+        "morans_i_spatial_correlation",
+        "gearys_c_spatial_correlation"
     ]
 
     print("Artifact leaders by PRNG")
@@ -327,6 +333,8 @@ def save_prng_artifact_plots(terrain_frame: pd.DataFrame) -> List[Path]:
         "histogram_count_dominance_ratio",
         "histogram_count_uniformity_score",
         "histogram_count_peak_to_mean_ratio",
+        "morans_i_spatial_correlation",
+        "gearys_c_spatial_correlation"
     ]
 
     prng_artifact_medians = expanded_terrain_frame.groupby("prng_type")[artifact_columns].median(numeric_only=True)

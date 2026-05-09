@@ -963,6 +963,11 @@ def main(*args: Any, **kwargs: Any) -> None:
 
     create_visualization(heightmap=heightmap)
 
+    """
+    running the script multiple times from PowerShell console:
+
+    for ($iterationIndex = 0; $iterationIndex -lt 100; $iterationIndex++) {python random_terrain.py}
+    """
     
 if __name__ == "__main__":
     main()
