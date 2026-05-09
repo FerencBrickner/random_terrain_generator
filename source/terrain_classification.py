@@ -67,6 +67,8 @@ def load_terrain_rows() -> pd.DataFrame:
             "max_gradient": terrain_row.max_gradient,
             "histogram_counts": terrain_row.histogram_counts,
             "histogram_bins": terrain_row.histogram_bins,
+            "morans_i_spatial_correlation": terrain_row.morans_i_spatial_correlation,
+            "gearys_c_spatial_correlation": terrain_row.gearys_c_spatial_correlation
         }
         for terrain_row in terrain_rows
     )

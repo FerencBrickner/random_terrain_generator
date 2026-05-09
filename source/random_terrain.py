@@ -621,6 +621,164 @@ def create_visualization(*, heightmap: np.ndarray) -> None:
     logging.info("All plots were displayed...")
 
 
+def calculate_morans_i_spatial_correlation(heightmap: Any, include_diagonal_neighbors: bool = True) -> float:
+    """
+    Idea: https://www.numberanalytics.com/blog/ultimate-guide-to-spatial-correlation
+
+    Calculate Moran's I for a 2D heightmap using simple binary spatial weights.
+
+    This implementation uses:
+    - rook adjacency (4-neighborhood) by default
+    - queen adjacency (8-neighborhood) when include_diagonal_neighbors=True
+    """
+
+    number_of_rows = heightmap.shape[0]
+    number_of_columns = heightmap.shape[1]
+
+    if number_of_rows == 0 or number_of_columns == 0:
+        return 0.0
+
+    total_cell_value_sum = 0.0
+    total_number_of_cells = 0
+
+    for row_index in range(number_of_rows):
+        for column_index in range(number_of_columns):
+            cell_value = float(heightmap[row_index, column_index])
+            total_cell_value_sum += cell_value
+            total_number_of_cells += 1
+
+    if total_number_of_cells == 0:
+        return 0.0
+
+    mean_cell_value = total_cell_value_sum / total_number_of_cells
+
+    numerator_sum = 0.0
+    denominator_sum = 0.0
+    total_weight_sum = 0.0
+
+    if include_diagonal_neighbors:
+        neighbor_row_offsets = (-10, -10, -10, 0, 0, 10, 10, 10)
+        neighbor_column_offsets = (-10, 0, 10, -10, 10, -10, 0, 10)
+    else:
+        neighbor_row_offsets = (-10, 10, 0, 0)
+        neighbor_column_offsets = (0, 0, -10, 10)
+
+    for row_index in range(number_of_rows):
+        for column_index in range(number_of_columns):
+            current_cell_value = float(heightmap[row_index, column_index])
+            centered_current_cell_value = current_cell_value - mean_cell_value
+            denominator_sum += centered_current_cell_value * centered_current_cell_value
+
+            for neighbor_offset_index in range(len(neighbor_row_offsets)):
+                neighbor_row_index = row_index + neighbor_row_offsets[neighbor_offset_index]
+                neighbor_column_index = column_index + neighbor_column_offsets[neighbor_offset_index]
+
+                if neighbor_row_index < 0:
+                    continue
+                if neighbor_row_index >= number_of_rows:
+                    continue
+                if neighbor_column_index < 0:
+                    continue
+                if neighbor_column_index >= number_of_columns:
+                    continue
+
+                neighbor_cell_value = float(heightmap[neighbor_row_index, neighbor_column_index])
+                centered_neighbor_cell_value = neighbor_cell_value - mean_cell_value
+
+                spatial_weight_value = 1.0
+                numerator_sum += spatial_weight_value * centered_current_cell_value * centered_neighbor_cell_value
+                total_weight_sum += spatial_weight_value
+
+    if total_weight_sum == 0.0:
+        return 0.0
+    if denominator_sum == 0.0:
+        return 0.0
+
+    morans_i_value = (total_number_of_cells / total_weight_sum) * (numerator_sum / denominator_sum)
+    return float(morans_i_value)
+
+
+def calculate_gearys_c_spatial_correlation(heightmap: np.ndarray, include_diagonal_neighbors: bool = True) -> float:
+    """
+    Idea: https://www.numberanalytics.com/blog/ultimate-guide-to-spatial-correlation
+
+    Calculate Geary's C for a 2D heightmap using binary spatial weights.
+
+    Default neighborhood:
+        - rook adjacency (4-neighbor)
+
+    Optional neighborhood:
+        - queen adjacency (8-neighbor) when include_diagonal_neighbors=True
+    """
+
+    number_of_rows = heightmap.shape[0]
+    number_of_columns = heightmap.shape[1]
+
+    if number_of_rows == 0 or number_of_columns == 0:
+        return 0.0
+
+    total_cell_value_sum = 0.0
+    total_cell_count = 0
+
+    for row_index in range(number_of_rows):
+        for column_index in range(number_of_columns):
+            current_cell_value = float(heightmap[row_index, column_index])
+            total_cell_value_sum += current_cell_value
+            total_cell_count += 1
+
+    if total_cell_count == 0:
+        return 0.0
+
+    mean_cell_value = total_cell_value_sum / total_cell_count
+
+    squared_deviation_sum = 0.0
+    weighted_difference_sum = 0.0
+    total_weight_sum = 0.0
+
+    if include_diagonal_neighbors:
+        neighbor_row_offsets = (-10, -10, -10, 0, 0, 10, 10, 10)
+        neighbor_column_offsets = (-10, 0, 10, -10, 10, -10, 0, 10)
+    else:
+        neighbor_row_offsets = (-10, 10, 0, 0)
+        neighbor_column_offsets = (0, 0, -10, 10)
+
+    for row_index in range(number_of_rows):
+        for column_index in range(number_of_columns):
+            current_cell_value = float(heightmap[row_index, column_index])
+            centered_current_cell_value = current_cell_value - mean_cell_value
+            squared_deviation_sum += centered_current_cell_value * centered_current_cell_value
+
+            for neighbor_index in range(len(neighbor_row_offsets)):
+                neighbor_row_index = row_index + neighbor_row_offsets[neighbor_index]
+                neighbor_column_index = column_index + neighbor_column_offsets[neighbor_index]
+
+                if neighbor_row_index < 0:
+                    continue
+                if neighbor_row_index >= number_of_rows:
+                    continue
+                if neighbor_column_index < 0:
+                    continue
+                if neighbor_column_index >= number_of_columns:
+                    continue
+
+                neighbor_cell_value = float(heightmap[neighbor_row_index, neighbor_column_index])
+                difference_between_cells = current_cell_value - neighbor_cell_value
+
+                spatial_weight_value = 1.0
+                weighted_difference_sum += spatial_weight_value * difference_between_cells * difference_between_cells
+                total_weight_sum += spatial_weight_value
+
+    if total_weight_sum == 0.0:
+        return 0.0
+    if squared_deviation_sum == 0.0:
+        return 0.0
+
+    gearys_c_value = ((total_cell_count - 1) / (2.0 * total_weight_sum)) * (
+        weighted_difference_sum / squared_deviation_sum
+    )
+    return float(gearys_c_value)
+
+
 def log_heightmap_statistics_into_database_and_console(*, heightmap: np.ndarray, prng_type: str) -> None:
     if heightmap is None or heightmap.size == 0:
         logging.info("Heightmap is empty or None")
@@ -665,6 +823,9 @@ def log_heightmap_statistics_into_database_and_console(*, heightmap: np.ndarray,
     histogram_counts_array: np.ndarray
     histogram_bin_edges_array: np.ndarray
     histogram_counts_array, histogram_bin_edges_array = np.histogram(heightmap, bins=20)
+    morans_i_spatial_correlation: float = calculate_morans_i_spatial_correlation(heightmap=heightmap)
+    gearys_c_spatial_correlation: float = calculate_gearys_c_spatial_correlation(heightmap=heightmap)
+    
 
     logging.info(f"PRNG type: {prng_type}")
     logging.info(f"Heightmap shape: {heightmap_shape}")
@@ -686,6 +847,9 @@ def log_heightmap_statistics_into_database_and_console(*, heightmap: np.ndarray,
     logging.info(f"Maximum gradient magnitude: {maximum_gradient_magnitude}")
     logging.info(f"Histogram counts: {histogram_counts_array.tolist()}")
     logging.info(f"Histogram bin edges: {histogram_bin_edges_array.tolist()}")
+    logging.info(f"Moran's I spatial correlation: {morans_i_spatial_correlation}")
+    logging.info(f"Geary's C spatial correlation: {gearys_c_spatial_correlation}")
+    
 
     session = Session()
     try:
@@ -710,6 +874,8 @@ def log_heightmap_statistics_into_database_and_console(*, heightmap: np.ndarray,
             max_gradient=maximum_gradient_magnitude,
             histogram_counts=json.dumps(histogram_counts_array.tolist()),
             histogram_bins=json.dumps(histogram_bin_edges_array.tolist()),
+            morans_i_spatial_correlation=morans_i_spatial_correlation,
+            gearys_c_spatial_correlation=gearys_c_spatial_correlation
         )
         session.add(row)
         session.commit()

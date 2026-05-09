@@ -37,6 +37,9 @@ class TerrainStats(Base):
     histogram_counts = Column(Text)
     histogram_bins = Column(Text)
 
+    morans_i_spatial_correlation = Column(Float)
+    gearys_c_spatial_correlation = Column(Float)
+
 
 engine = create_engine("sqlite:///terrain.db")
 Base.metadata.create_all(engine)
