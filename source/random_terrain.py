@@ -20,6 +20,27 @@ else:
         return target_function
 
 
+from functools import wraps
+from time import perf_counter
+
+def measure_latency(target_function):
+    @wraps(target_function)
+    def wrapper(*args, **kwargs):
+        start_time = perf_counter()
+
+        result = target_function(*args, **kwargs)
+
+        end_time = perf_counter()
+
+        latency_seconds = end_time - start_time
+
+        logging.info(f"Latency: {latency_seconds:.4f} seconds")
+
+        return result
+
+    return wrapper
+
+
 class GaussianSigmaShouldBePositive(Exception):
     """Gaussian sigma should be positive."""
 
@@ -909,6 +930,7 @@ def log_heightmap_statistics_into_database_and_console(*, heightmap: np.ndarray,
 
 
 @profile
+@measure_latency
 def main(*args: Any, should_i_create_visualizations: bool = True, **kwargs: Any) -> None:
     """
     Run a demo producing and plotting a heightmap in 2D and 3D.
