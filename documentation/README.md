@@ -28,6 +28,12 @@ The project has two main parts:
      - permutation importance plot
      - per-PRNG artifact comparisons
 
+## Dependencies
+
+Dependencies are located within requirements.txt
+
+pip install -r requirements.txt
+
 ## Project Structure
 
 ### `random_terrain.py`
@@ -72,6 +78,8 @@ The stored statistics include values such as:
 - gradients
 - unique value counts
 - histogram data
+- Moran's I spatial correlation
+- Geary's C spatial correlation
 
 These statistics are used later for analysis and classification.
 
