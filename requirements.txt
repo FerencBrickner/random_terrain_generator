@@ -5,3 +5,5 @@ sqlalchemy
 scikit-learn
 pandas
 pytest
+memory-profiler
+psutil

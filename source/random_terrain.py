@@ -1,4 +1,4 @@
-from typing import Generator, Any, Optional, Tuple
+from typing import Generator, Any, Optional, Tuple, Final
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LightSource
@@ -10,6 +10,14 @@ from PRNGs.wichmann_hill import wichmann_hill_generator
 from PRNGs.logistic_map import logistic_map_pseudorandom_generator
 import json
 from db import Session, TerrainStats
+
+ENABLE_MEMORY_PROFILING: Final[bool] = False
+
+if ENABLE_MEMORY_PROFILING:
+    from memory_profiler import profile
+else:
+    def profile(target_function):
+        return target_function
 
 
 class GaussianSigmaShouldBePositive(Exception):
@@ -900,6 +908,7 @@ def log_heightmap_statistics_into_database_and_console(*, heightmap: np.ndarray,
         logging.info("Statistics were successfully logged to the database...")
 
 
+@profile
 def main(*args: Any, should_i_create_visualizations: bool = True, **kwargs: Any) -> None:
     """
     Run a demo producing and plotting a heightmap in 2D and 3D.
