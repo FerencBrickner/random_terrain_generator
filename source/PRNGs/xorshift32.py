@@ -1,6 +1,9 @@
 from typing import Final, Generator
 
 def xorshift_32_float_generator(*, seed: int) -> Generator[float, None, None]:
+    """
+    Idea: https://handwiki.org/wiki/Xorshift
+    """
     if seed == 0:
         seed = 1
 

@@ -2,6 +2,9 @@ from typing import Generator
 
 
 def wichmann_hill_generator(*, seed_1: int, seed_2: int, seed_3: int) -> Generator[float, None, None]:
+    """
+    Idea: https://handwiki.org/wiki/Wichmann%E2%80%93Hill
+    """
     while True:
         if seed_1 == 0:
             seed_1 = 1
