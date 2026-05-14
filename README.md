@@ -116,6 +116,10 @@ The unit tests focus on areas such as:
 - returntype assertions
 - performance checks
 - returnvalue assertions
+- determinisim assertions
+- array shape assertions
+- zero seed handling assertions
+- exception safety assertions
 
 ### GitHub Actions automated unit tests
 
