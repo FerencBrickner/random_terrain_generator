@@ -6,7 +6,7 @@ terrain_generation:
   octaves: 6 #6
   persistence: 0.5 #0.5
   initial_scale: 128 #128
-  continent_effect_strength: 1
+  continent_effect_strength: 0
 
 prng:
   prng_type: xorshift32
