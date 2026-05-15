@@ -32,15 +32,15 @@ The project has two main parts:
 
 Dependencies are located within requirements.txt
 
-numpy
-matplotlib
-PyYAML
-sqlalchemy
-scikit-learn
-pandas
-pytest
-memory-profiler
-psutil
+- numpy
+- matplotlib
+- PyYAML
+- sqlalchemy
+- scikit-learn
+- pandas
+- pytest
+- memory-profiler
+- psutil
 
 pip install -r requirements.txt
 
